@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling >= 1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "qygpp_tools"
+version = "0.9.0"
+authors = [
+  { name="Sven Berendsen", email="sberendsen@soton.ac.uk" },
+]
+description = "A package providing various tools for working with the QY-GPP dataset."
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+license = "Apache-2.0"
+license-files = ["LICENSE*"]
+dependencies = [
+  "blosc",
+  "cartopy",
+  "dask",
+  "geopandas",
+  "kaleido-core",
+  "matplotlib",
+  "numpy",
+  "pandas",
+  "plotly",
+  "rasterio",
+  "tqdm",
+  "xarray",
+  "zarr",
+]
+
+[project.urls]
+Homepage = "https://github.com/LeoTolstoi/qygpp_tools"
+Issues = "https://github.com/LeoTolstoi/qygpp_tools/issues"
