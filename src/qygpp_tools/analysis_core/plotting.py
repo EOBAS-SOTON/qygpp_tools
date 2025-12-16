@@ -343,7 +343,7 @@ def _make_main_plot(
         if np.isnan(vmax):
             vmax_plot = math.ceil(max(max_val * max_factor, mean_val))
         else:
-            vmax_plot = math.ceil(max(vmax, 20.0))
+            vmax_plot = math.ceil(max(vmax, 10.0))
     elif plot_type == 'difference':
         if np.isnan(vmax):
             vmax_plot = math.ceil(
@@ -351,7 +351,7 @@ def _make_main_plot(
                     abs(max_val) * max_factor))
             vmin_plot = -vmax_plot
         else:
-            vmax_plot = math.ceil(max(vmax, 20.0))
+            vmax_plot = math.ceil(max(vmax, 10.0))
             vmin_plot = -vmax_plot
     else:
         raise NotImplementedError(
