@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "qygpp_tools"
-version = "0.9.0"
+version = "0.9.1"
 authors = [
   { name="Sven Berendsen", email="sberendsen@soton.ac.uk" },
 ]
@@ -22,7 +22,7 @@ dependencies = [
   "cartopy",
   "dask",
   "geopandas",
-  "kaleido-core",
+  "kaleido",
   "matplotlib",
   "numpy",
   "pandas",
