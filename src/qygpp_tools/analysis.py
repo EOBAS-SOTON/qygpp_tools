@@ -29,8 +29,66 @@ from tqdm import tqdm
 import xarray as xr
 import zarr
 
+import boto3
+from botocore import UNSIGNED
+from botocore.config import Config
+import os
+import fnmatch
+
+
 from .analysis_core import plotting as _plot
 from .analysis_core import timeseries as _ts
+
+
+bucket_name = "EarthCODE"
+base_prefix = "OSCAssets/sen4gpp/"
+endpoint_url = "https://s3.waw4-1.cloudferro.com"
+
+def list_available_datums():
+    """
+    List all the datums with data.
+    """
+    s3 = boto3.client(
+        's3',
+        endpoint_url=endpoint_url,
+        config=Config(signature_version=UNSIGNED)
+    )
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=base_prefix, Delimiter='/')
+    prefixes = response.get('CommonPrefixes', [])
+    return [p['Prefix'].split('/')[-2] for p in prefixes]
+
+
+def download_datum_files(datum, download_dir, tiles=None):
+    """"
+    Download all `tiles` for `datum` and store them in `download_dir`.
+    If `tiles` is None, download all available data.
+    """
+
+    s3 = boto3.client(
+        's3',
+        endpoint_url=endpoint_url,
+        config=Config(signature_version=UNSIGNED)
+    )
+
+    prefix = f"{base_prefix}{datum}/"
+    response = s3.list_objects_v2(Bucket=bucket_name, Prefix=prefix)
+    if 'Contents' in response.keys():
+        filelist = [obj['Key'] for obj in response['Contents']]
+    else:
+        filelist = []
+
+    download_dir_datum = f'{download_dir}{datum}/'
+    os.mkdir(download_dir_datum)
+    
+    for s3_key in filelist:
+
+        # check if file maches the specified pattern
+        if (tiles is None) or (s3_key.split('_')[3] in tiles):
+            print('Downloading', s3_key)
+            filename = os.path.basename(s3_key)
+            local_path = os.path.join(download_dir_datum, filename)
+            s3.download_file(bucket_name, s3_key, local_path)
+
 
 
 def extract_timeseries(directory: str,
