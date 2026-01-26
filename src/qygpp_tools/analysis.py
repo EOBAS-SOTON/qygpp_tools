@@ -39,7 +39,6 @@ import fnmatch
 from .analysis_core import plotting as _plot
 from .analysis_core import timeseries as _ts
 
-
 bucket_name = "EarthCODE"
 base_prefix = "OSCAssets/sen4gpp/"
 endpoint_url = "https://s3.waw4-1.cloudferro.com"
@@ -88,7 +87,6 @@ def download_datum_files(datum, download_dir, tiles=None):
             filename = os.path.basename(s3_key)
             local_path = os.path.join(download_dir_datum, filename)
             s3.download_file(bucket_name, s3_key, local_path)
-
 
 
 def extract_timeseries(directory: str,
