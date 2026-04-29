@@ -267,6 +267,11 @@ def _make_main_plot(
     title_unit: str = "gC/m²",
 ) -> None:
 
+    if np.isnan(max_factor):
+        max_fac = 1.0
+    else:
+        max_fac = max_factor
+
     # the dataset needs to be loaded into memory at one point here
     # make certain that it is in float32 format (only data variables, not coordinates)
     for var in dataset.data_vars:
@@ -348,14 +353,12 @@ def _make_main_plot(
 
     if plot_type == "standard":
         if np.isnan(vmax):
-            vmax_plot = math.ceil(max(max_val * max_factor, mean_val))
+            vmax_plot = math.ceil(max(max_val * max_fac, mean_val))
         else:
             vmax_plot = math.ceil(max(vmax, 10.0))
     elif plot_type == "difference":
         if np.isnan(vmax):
-            vmax_plot = math.ceil(
-                max(abs(min_val) * max_factor, abs(max_val) * max_factor)
-            )
+            vmax_plot = math.ceil(max(abs(min_val) * max_fac, abs(max_val) * max_fac))
             vmin_plot = -vmax_plot
         else:
             vmax_plot = math.ceil(max(vmax, 10.0))
