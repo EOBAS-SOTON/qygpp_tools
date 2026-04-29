@@ -33,18 +33,20 @@ from .analysis_core import plotting as _plot
 from .analysis_core import timeseries as _ts
 
 
-def extract_timeseries(directory: str,
-                       dir_out: str,
-                       fn_points: str,
-                       point_layer: str = '',
-                       name_column: str = '',
-                       time_start: str = '',
-                       time_end: str = '',
-                       scale_factor: float = np.nan,
-                       flag_value: bool = True,
-                       flag_quality: bool = False,
-                       cellbuffer_extend: int = 0,
-                       extract_area: bool = False) -> None:
+def extract_timeseries(
+    directory: str,
+    dir_out: str,
+    fn_points: str,
+    point_layer: str = "",
+    name_column: str = "",
+    time_start: str = "",
+    time_end: str = "",
+    scale_factor: float = np.nan,
+    flag_value: bool = True,
+    flag_quality: bool = False,
+    cellbuffer_extend: int = 0,
+    extract_area: bool = False,
+) -> None:
     """
     Extract a timeseries from a directory of SEN4GPP output.
 
@@ -62,29 +64,35 @@ def extract_timeseries(directory: str,
 
     # get list of subdirectories in directory if it is of the form YYYY-MM-DD
     subdirs = [
-        f for f in os.listdir(directory)
-        if os.path.isdir(os.path.join(directory, f))
+        f for f in os.listdir(directory) if os.path.isdir(os.path.join(directory, f))
     ]
     subdirs = [
-        x for x in subdirs if len(x) == 10 and x[4] == '-' and x[7] == '-'
-        and x[0:4].isdigit() and x[5:7].isdigit() and x[8:10].isdigit()
+        x
+        for x in subdirs
+        if len(x) == 10
+        and x[4] == "-"
+        and x[7] == "-"
+        and x[0:4].isdigit()
+        and x[5:7].isdigit()
+        and x[8:10].isdigit()
     ]
     subdirs = sorted(subdirs)
 
     # get the time range
-    if time_start == '':
+    if time_start == "":
         t_start = datetime.datetime.strptime(subdirs[0], "%Y-%m-%d")
     else:
         t_start = datetime.datetime.strptime(time_start, "%Y-%m-%d")
 
-    if time_end == '':
+    if time_end == "":
         t_end = datetime.datetime.strptime(subdirs[-1], "%Y-%m-%d")
     else:
         t_end = datetime.datetime.strptime(time_end, "%Y-%m-%d")
 
     # get the subdirectories in the time range
     subdirs = [
-        f for f in subdirs
+        f
+        for f in subdirs
         if datetime.datetime.strptime(f, "%Y-%m-%d") >= t_start
         and datetime.datetime.strptime(f, "%Y-%m-%d") <= t_end
     ]
@@ -94,11 +102,12 @@ def extract_timeseries(directory: str,
 
     # safety
     unique_geom_types = gdf.geom_type.unique()
-    if len(unique_geom_types) != 1 or unique_geom_types[0] != 'Point':
+    if len(unique_geom_types) != 1 or unique_geom_types[0] != "Point":
         raise ValueError("Only Point geometries are supported")
 
-    print(f"\nExtracting {len(gdf)} points from "
-          f"{len(subdirs)} timesteps, loading data...")
+    print(
+        f"\nExtracting {len(gdf)} points from {len(subdirs)} timesteps, loading data..."
+    )
 
     # get the filenames
     # TODO support .nc as well
@@ -110,32 +119,29 @@ def extract_timeseries(directory: str,
                 os.path.join(directory, subdir, f)
                 for f in os.listdir(os.path.join(directory, subdir))
                 if os.path.isfile(os.path.join(directory, subdir, f))
-                and f.endswith('.tif')
+                and f.endswith(".tif")
             ]
 
             # get the data
-            ds = xr.open_mfdataset(files,
-                                   combine='by_coords',
-                                   chunks={
-                                       "band": 1,
-                                       "x": 512,
-                                       "y": 512
-                                   },
-                                   parallel=True)
+            ds = xr.open_mfdataset(
+                files,
+                combine="by_coords",
+                chunks={"band": 1, "x": 512, "y": 512},
+                parallel=True,
+            )
 
             # add the time variable
-            ds = ds.assign_coords(
-                time=datetime.datetime.strptime(subdir, "%Y-%m-%d"))
+            ds = ds.assign_coords(time=datetime.datetime.strptime(subdir, "%Y-%m-%d"))
 
             # add to the list
             list_ds.append(ds)
             pbar.update(1)
 
     # combine the datasets
-    ds = xr.concat(list_ds, dim='time')
-    ds.chunk({'time': 32, 'x': 32, 'y': 32})
+    ds = xr.concat(list_ds, dim="time")
+    ds.chunk({"time": 32, "x": 32, "y": 32})
 
-    print('...loaded data, extracting now...')
+    print("...loaded data, extracting now...")
 
     # check & convert crs
     if gdf.crs is None:
@@ -150,26 +156,27 @@ def extract_timeseries(directory: str,
     # extract the data
     with tqdm(total=len(gdf)) as pbar:
         for i in range(len(gdf)):
-
             # safety
             if gdf.geometry[i].is_empty:
                 pbar.update(1)
                 continue
 
             # work
-            _ts._extract_timeseries(gdf,
-                                    i,
-                                    ds,
-                                    dir_out,
-                                    name_column,
-                                    scale_factor,
-                                    flag_value,
-                                    flag_quality,
-                                    cellbuffer_extend,
-                                    extract_area=extract_area)
+            _ts._extract_timeseries(
+                gdf,
+                i,
+                ds,
+                dir_out,
+                name_column,
+                scale_factor,
+                flag_value,
+                flag_quality,
+                cellbuffer_extend,
+                extract_area=extract_area,
+            )
             pbar.update(1)
 
-    print('...done.\n')
+    print("...done.\n")
 
     pass
 
@@ -184,21 +191,21 @@ def plot_composite(
     value_factor: float = 1.0,
     max_factor: float = 1.0,
     save_composite: bool = False,
-    extra_actions: str = '',
+    extra_actions: str = "",
     lon_min: float = np.nan,
     lon_max: float = np.nan,
     lat_min: float = np.nan,
     lat_max: float = np.nan,
-    fn_worldcover: str = '',
-    extra_xlabel: str = '',
+    fn_worldcover: str = "",
+    extra_xlabel: str = "",
     exclude_lc_class: list = [],
-    colourscale: str = 'viridis',
+    colourscale: str = "viridis",
     export_stats: bool = False,
     stop_after_save: bool = False,
 ) -> None:
     """
     Plot a composite of the data in the given directory.
-    
+
     :param directory: str, directory containing the data
     :param dates: list, list of dates to plot
     :param fnpart_out: str, filename part for the output file
@@ -235,7 +242,7 @@ def plot_composite(
     else:
         dates_dirs = subdir_dates
 
-    print(f'Processing {len(dates_dirs)} composite(s):')
+    print(f"Processing {len(dates_dirs)} composite(s):")
 
     for date in dates_dirs:
         date_str = date.strftime("%Y-%m-%d")
@@ -246,18 +253,16 @@ def plot_composite(
             os.path.join(directory, date_str, f)
             for f in os.listdir(os.path.join(directory, date_str))
             if os.path.isfile(os.path.join(directory, date_str, f))
-            and f.endswith('.tif')
+            and f.endswith(".tif")
         ]
 
         # load the data
-        ds = xr.open_mfdataset(files,
-                               combine='by_coords',
-                               chunks={
-                                   "band": 1,
-                                   "x": 400,
-                                   "y": 400
-                               },
-                               parallel=True)
+        ds = xr.open_mfdataset(
+            files,
+            combine="by_coords",
+            chunks={"band": 1, "x": 400, "y": 400},
+            parallel=True,
+        )
 
         # add the time variable
         ds = ds.assign_coords(time=date).sel(band=1)
@@ -266,33 +271,35 @@ def plot_composite(
         if save_composite:
             data_dir_part = _plot._gen_data_dir_part(fnpart_out)
             fnpart_data = f"{os.path.basename(fnpart_out)}{date_str}.zarr"
-            fnpart_data = fnpart_data.replace('__', '_')
+            fnpart_data = fnpart_data.replace("__", "_")
         else:
-            data_dir_part = ''
-            fnpart_data = ''
+            data_dir_part = ""
+            fnpart_data = ""
 
         # plot the dataset
-        plot_dataset(ds,
-                     title=f"{title} for day {date_str}",
-                     file_out=f"{fnpart_out}_{date_str}.png",
-                     operator="only_plot",
-                     coarsen=coarsen,
-                     vmax=vmax,
-                     value_factor=value_factor,
-                     max_factor=max_factor,
-                     data_output_dir=data_dir_part,
-                     data_output_fn=fnpart_data,
-                     extra_actions=extra_actions,
-                     lon_min=lon_min,
-                     lon_max=lon_max,
-                     lat_min=lat_min,
-                     lat_max=lat_max,
-                     fn_worldcover=fn_worldcover,
-                     extra_xlabel=extra_xlabel,
-                     exclude_lc_class=exclude_lc_class,
-                     colourscale=colourscale,
-                     export_stats=export_stats,
-                     stop_after_save=stop_after_save)
+        plot_dataset(
+            ds,
+            title=f"{title} for day {date_str}",
+            file_out=f"{fnpart_out}_{date_str}.png",
+            operator="only_plot",
+            coarsen=coarsen,
+            vmax=vmax,
+            value_factor=value_factor,
+            max_factor=max_factor,
+            data_output_dir=data_dir_part,
+            data_output_fn=fnpart_data,
+            extra_actions=extra_actions,
+            lon_min=lon_min,
+            lon_max=lon_max,
+            lat_min=lat_min,
+            lat_max=lat_max,
+            fn_worldcover=fn_worldcover,
+            extra_xlabel=extra_xlabel,
+            exclude_lc_class=exclude_lc_class,
+            colourscale=colourscale,
+            export_stats=export_stats,
+            stop_after_save=stop_after_save,
+        )
 
         ds.close()
 
@@ -301,8 +308,8 @@ def plot_composite(
 
 def plot_dataset(
     dataset: xr.Dataset,
-    title: str = '',
-    file_out: str = '',
+    title: str = "",
+    file_out: str = "",
     operator: str = "mean",
     coarsen: int = 1,
     lon_min: float = np.nan,
@@ -312,18 +319,20 @@ def plot_dataset(
     max_factor: float = 1.0,
     vmax: float = np.nan,
     value_factor: float = 1.0,
-    data_output_dir: str = '',
-    data_output_fn: str = '',
+    data_output_dir: str = "",
+    data_output_fn: str = "",
     continue_plot: bool = False,
-    extra_actions: str = '',
-    fn_worldcover: str = '',
-    extra_xlabel: str = '',
+    extra_actions: str = "",
+    fn_worldcover: str = "",
+    extra_xlabel: str = "",
+    colorbar_label: str = "",
     exclude_lc_class: list = [],
-    colourscale: str = 'viridis',
+    colourscale: str = "viridis",
     export_stats: bool = False,
     pixel_threshold: int = 25_000_000,
-    plot_type: str = 'standard',
+    plot_type: str = "standard",
     stop_after_save: bool = False,
+    title_unit: str = "gC/m²",
 ) -> None:
     """
 
@@ -347,12 +356,14 @@ def plot_dataset(
     :param extra_actions: str, extra actions to perform (e.g. 'sum,mean,record,plot')
     :param fn_worldcover: str, filename of the world cover data to use
     :param extra_xlabel: str, extra label for the x-axis
+    :param colorbar_label: str, label for the colorbar (overrides GPP label)
     :param exclude_lc_class: list, list of land cover classes to exclude from the plot
     :param colourscale: str, colourscale to use for the plot
     :param export_stats: bool, whether to export statistics of the plot
     :param pixel_threshold: int, threshold of pixels to switch between pcolormesh and imshow
     :param plot_type: str, type of plot to generate (standard, difference)
     :param stop_after_save: bool, whether to stop after saving the dataset
+    :param title_unit: str, unit label for mean/max in the plot title
 
     operator keys, multiple can be used at once by joining them with the plus sign (+):
     - "mean": compute the mean of the dataset
@@ -372,15 +383,14 @@ def plot_dataset(
     #
 
     # safety checks
-    if not file_out.endswith('.png'):
-        raise ValueError(
-            f"file_out must end with .png, but got {file_out} instead.")
+    if not file_out.endswith(".png"):
+        raise ValueError(f"file_out must end with .png, but got {file_out} instead.")
 
     # settings
-    fn_out = file_out.replace('__', '_')
+    fn_out = file_out.replace("__", "_")
 
     # safe data, if requested
-    if data_output_fn != '' and not continue_plot:
+    if data_output_fn != "" and not continue_plot:
         print("     Exporting the combined dataset...")
 
         # check if the output directory exists, if not, create it
@@ -389,22 +399,25 @@ def plot_dataset(
             os.makedirs(os.path.dirname(fn_combined))
 
         # output the dataset to zarr
-        if data_output_fn.endswith('.zarr'):
-            compressor = zarr.codecs.BloscCodec(cname="zstd",
-                                                clevel=3,
-                                                shuffle="shuffle")
+        if data_output_fn.endswith(".zarr"):
+            compressor = zarr.codecs.BloscCodec(
+                cname="zstd", clevel=3, shuffle="shuffle"
+            )
             enc = {x: {"compressor": compressor} for x in dataset}
-            dataset.to_zarr(os.path.join(data_output_dir, data_output_fn),
-                            mode='w',
-                            encoding=enc,
-                            consolidated=None)
-        elif data_output_fn.endswith('.nc'):
-            encoding = {var: {'dtype': 'float32'} for var in dataset.data_vars}
-            dataset.to_netcdf(os.path.join(data_output_dir, data_output_fn),
-                              mode='w',
-                              encoding=encoding)
-        elif data_output_fn.endswith('.tif') or data_output_fn.endswith(
-                '.tiff'):
+            dataset.to_zarr(
+                os.path.join(data_output_dir, data_output_fn),
+                mode="w",
+                encoding=enc,
+                consolidated=None,
+            )
+        elif data_output_fn.endswith(".nc"):
+            encoding = {var: {"dtype": "float32"} for var in dataset.data_vars}
+            dataset.to_netcdf(
+                os.path.join(data_output_dir, data_output_fn),
+                mode="w",
+                encoding=encoding,
+            )
+        elif data_output_fn.endswith(".tif") or data_output_fn.endswith(".tiff"):
             # Save the dataset as a GeoTIFF file
             dataset.band_data.rio.to_raster(
                 os.path.join(data_output_dir, data_output_fn),
@@ -413,11 +426,13 @@ def plot_dataset(
                 bigtiff=True,
                 tiled=True,
                 # driver="COG",
-                windowed=True)
+                windowed=True,
+            )
         else:
             raise NotImplementedError(
                 f"Data output format {data_output_fn} not supported. "
-                "Supported formats are: .zarr, .nc, .tif, .tiff.")
+                "Supported formats are: .zarr, .nc, .tif, .tiff."
+            )
 
         if stop_after_save:
             print("     Stopping after saving the dataset as requested.")
@@ -432,24 +447,34 @@ def plot_dataset(
 
     if operator == "mean":
         if "band" in dataset.dims:
-            ds = dataset.sel(band=1).mean(dim='time', skipna=True).coarsen(
-                x=coarsen, y=coarsen, boundary='trim').mean()
+            ds = (
+                dataset.sel(band=1)
+                .mean(dim="time", skipna=True)
+                .coarsen(x=coarsen, y=coarsen, boundary="trim")
+                .mean()
+            )
         else:
-            ds = dataset.mean(dim='time',
-                              skipna=True).coarsen(x=coarsen,
-                                                   y=coarsen,
-                                                   boundary='trim').max()
+            ds = (
+                dataset.mean(dim="time", skipna=True)
+                .coarsen(x=coarsen, y=coarsen, boundary="trim")
+                .max()
+            )
     elif operator == "sum":
         if "band" in dataset.dims:
-            ds = dataset.sel(band=1).sum(dim='time', skipna=True).coarsen(
-                x=coarsen, y=coarsen, boundary='trim').sum()
+            ds = (
+                dataset.sel(band=1)
+                .sum(dim="time", skipna=True)
+                .coarsen(x=coarsen, y=coarsen, boundary="trim")
+                .sum()
+            )
         else:
-            ds = dataset.sum(dim='time',
-                             skipna=True).coarsen(x=coarsen,
-                                                  y=coarsen,
-                                                  boundary='trim').max()
+            ds = (
+                dataset.sum(dim="time", skipna=True)
+                .coarsen(x=coarsen, y=coarsen, boundary="trim")
+                .max()
+            )
     elif operator == "only_plot":
-        ds = dataset.coarsen(x=coarsen, y=coarsen, boundary='trim').max()
+        ds = dataset.coarsen(x=coarsen, y=coarsen, boundary="trim").max()
     else:
         raise ValueError(
             f"Operator {operator} not supported. Supported operators are: mean and sum."
@@ -459,8 +484,12 @@ def plot_dataset(
     #       "with", ds.sizes["x"] * ds.sizes["y"],"number of cells"  )
 
     # determine whether cropping is necessary
-    if not np.isnan(lon_min) or not np.isnan(lon_max) or not np.isnan(
-            lat_min) or not np.isnan(lat_max):
+    if (
+        not np.isnan(lon_min)
+        or not np.isnan(lon_max)
+        or not np.isnan(lat_min)
+        or not np.isnan(lat_max)
+    ):
         cropped = True
     else:
         cropped = False
@@ -480,20 +509,21 @@ def plot_dataset(
         from rasterio.warp import transform_bounds
         from rasterio.enums import Resampling
 
-        target_bounds = transform_bounds(ds.rio.crs, "EPSG:4326",
-                                         src_bounds[0], src_bounds[1],
-                                         src_bounds[2], src_bounds[3])
+        target_bounds = transform_bounds(
+            ds.rio.crs,
+            "EPSG:4326",
+            src_bounds[0],
+            src_bounds[1],
+            src_bounds[2],
+            src_bounds[3],
+        )
 
         # If cropping, use the crop bounds to determine effective extent
         if cropped:
-            eff_lon_min = lon_min if not np.isnan(
-                lon_min) else target_bounds[0]
-            eff_lon_max = lon_max if not np.isnan(
-                lon_max) else target_bounds[2]
-            eff_lat_min = lat_min if not np.isnan(
-                lat_min) else target_bounds[1]
-            eff_lat_max = lat_max if not np.isnan(
-                lat_max) else target_bounds[3]
+            eff_lon_min = lon_min if not np.isnan(lon_min) else target_bounds[0]
+            eff_lon_max = lon_max if not np.isnan(lon_max) else target_bounds[2]
+            eff_lat_min = lat_min if not np.isnan(lat_min) else target_bounds[1]
+            eff_lat_max = lat_max if not np.isnan(lat_max) else target_bounds[3]
         else:
             eff_lon_min, eff_lat_min, eff_lon_max, eff_lat_max = target_bounds
 
@@ -522,9 +552,9 @@ def plot_dataset(
             target_res = max(target_res, min_display_res)
 
         # Reproject with explicit resolution and bilinear resampling for smooth output
-        ds = ds.rio.reproject("EPSG:4326",
-                              resolution=target_res,
-                              resampling=Resampling.bilinear)
+        ds = ds.rio.reproject(
+            "EPSG:4326", resolution=target_res, resampling=Resampling.bilinear
+        )
 
     # print("     - Resolution after reprojection: ", ds.rio.resolution(),
     #       "with", ds.sizes["x"] * ds.sizes["y"],"number of cells"  )
@@ -555,8 +585,9 @@ def plot_dataset(
         lati_max = lat_max
 
     if cropped:
-        cropped_dataset = ds.sel(y=slice(lati_max, lati_min),
-                                 x=slice(long_min, long_max))
+        cropped_dataset = ds.sel(
+            y=slice(lati_max, lati_min), x=slice(long_min, long_max)
+        )
     else:
         cropped_dataset = ds
 
@@ -565,88 +596,93 @@ def plot_dataset(
         cropped_dataset = cropped_dataset * value_factor
 
     if export_stats:
-        stats_data = _plot.gen_stats(cropped_dataset,
-                                     f"{fn_out[:-4]}_stats.txt")
+        stats_data = _plot.gen_stats(cropped_dataset, f"{fn_out[:-4]}_stats.txt")
     else:
         stats_data = {}
 
     # make the map
     # TODO add switch for whether actually to output
     print("     Making main plot:")
-    _plot._make_main_plot(cropped_dataset,
-                          cropped=cropped,
-                          title=title,
-                          file_out=fn_out,
-                          vmax=vmax,
-                          max_factor=max_factor,
-                          lon_max=lon_max,
-                          lon_min=lon_min,
-                          lat_max=lat_max,
-                          lat_min=lat_min,
-                          extra_xlabel=extra_xlabel,
-                          colourscale=colourscale,
-                          pixel_threshold=pixel_threshold,
-                          plot_type=plot_type,
-                          stats_data=stats_data)
+    _plot._make_main_plot(
+        cropped_dataset,
+        cropped=cropped,
+        title=title,
+        file_out=fn_out,
+        vmax=vmax,
+        max_factor=max_factor,
+        lon_max=lon_max,
+        lon_min=lon_min,
+        lat_max=lat_max,
+        lat_min=lat_min,
+        extra_xlabel=extra_xlabel,
+        colorbar_label=colorbar_label,
+        colourscale=colourscale,
+        pixel_threshold=pixel_threshold,
+        plot_type=plot_type,
+        stats_data=stats_data,
+        title_unit=title_unit,
+    )
 
     # do the "side" plots
     if "plot" in extra_actions or "record" in extra_actions:
-
         # TODO add ability to _not_ plot when outputting data
 
         print("     Making longitude plots...")
 
-        if data_output_dir == '':
+        if data_output_dir == "":
             output_dir = _plot._gen_data_dir_part(fn_out)
         else:
             output_dir = data_output_dir
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-        if data_output_fn == '':
-            output_fn = '.'.join(os.path.basename(fn_out).split('.')[:-1])
+        if data_output_fn == "":
+            output_fn = ".".join(os.path.basename(fn_out).split(".")[:-1])
         else:
-            output_fn = '.'.join(data_output_fn.split('.')[:-1])
+            output_fn = ".".join(data_output_fn.split(".")[:-1])
 
         if "sum" in extra_actions:
             _plot._plot_longitude(
                 cropped_dataset,
                 title=title,
-                fn_out=fn_out.replace('.png', '_longitude_sum'),
+                fn_out=fn_out.replace(".png", "_longitude_sum"),
                 fn_data_out=f"{output_dir}/{output_fn}_longitude_data_sum.csv",
-                method='sum',
+                method="sum",
                 output_data="record" in extra_actions,
-                extra_xlabel=extra_xlabel)
+                extra_xlabel=extra_xlabel,
+            )
 
         if "mean" in extra_actions:
             _plot._plot_longitude(
                 cropped_dataset,
                 title=title,
-                fn_out=fn_out.replace('.png', '_longitude_mean'),
+                fn_out=fn_out.replace(".png", "_longitude_mean"),
                 fn_data_out=f"{output_dir}/{output_fn}_longitude_data_mean.csv",
-                method='mean',
+                method="mean",
                 output_data="record" in extra_actions,
-                extra_xlabel=extra_xlabel)
+                extra_xlabel=extra_xlabel,
+            )
         pass
 
-        if fn_worldcover != '':
+        if fn_worldcover != "":
             print("     Plotting land cover distribution...")
 
-            if 'record' in extra_actions:
-                if data_output_dir == '':
+            if "record" in extra_actions:
+                if data_output_dir == "":
                     output_dir = _plot._gen_data_dir_part(fn_out)
                 else:
                     output_dir = data_output_dir
             else:
-                output_dir = ''
+                output_dir = ""
 
             # TODO implement the world cover plotting
-            _plot._plot_lc_percentage(cropped_dataset,
-                                      fn_worldcover,
-                                      title,
-                                      fn_out.replace('.png',
-                                                     '_lc_percentages.png'),
-                                      output_dir,
-                                      exclude_lc_class=exclude_lc_class)
+            _plot._plot_lc_percentage(
+                cropped_dataset,
+                fn_worldcover,
+                title,
+                fn_out.replace(".png", "_lc_percentages.png"),
+                output_dir,
+                exclude_lc_class=exclude_lc_class,
+            )
 
             pass
 
@@ -668,18 +704,24 @@ def plot_range(
     output_data: bool = False,
     value_factor: float = 1.0,
     continue_plot: bool = False,
-    extra_actions: str = '',  # 'sum,mean,record,plot'
-    fn_worldcover: str = '',
+    extra_actions: str = "",  # 'sum,mean,record,plot'
+    fn_worldcover: str = "",
     lon_min: float = np.nan,
     lon_max: float = np.nan,
     lat_min: float = np.nan,
     lat_max: float = np.nan,
-    extra_xlabel: str = '',
+    extra_xlabel: str = "",
     max_factor: float = np.nan,
     exclude_lc_class: list = [],
-    colourscale: str = 'viridis',
+    colourscale: str = "viridis",
     export_stats: bool = False,
     stop_after_save: bool = False,
+    plot_missing_pct: bool = False,
+    missing_suffix: str = "percNaN",
+    missing_title_prefix: str = "Percentage NaN in Composite:",
+    missing_colourscale: str = "magma",
+    missing_label: str = "Percentage missing Timepoints (%)",
+    missing_tile_suffix: str = "missing_percNaN",
 ) -> None:
     """
     Generate a plot for the given dataset over a range of dates.
@@ -708,27 +750,51 @@ def plot_range(
     :param colourscale: str, colourscale to use for the plot
     :param export_stats: bool, whether to export statistics of the plot
     :param stop_after_save: bool, whether to stop after saving the dataset
+    :param plot_missing_pct: bool, whether to plot percent missing per cell
+    :param missing_suffix: str, suffix for the missing-percentage plot output
+    :param missing_title_prefix: str, title prefix for the missing-percentage plot
+    :param missing_colourscale: str, colourscale to use for the missing plot
+    :param missing_label: str, label for the missing-percentage colorbar
+    :param missing_tile_suffix: str, suffix for missing tiles in low-memory mode
     """
 
     # TODO add support for plotting the QC data
     # TODO add plotting restart from fn_combined only
 
-    if title != '':
+    if title != "":
         print(f"\nGenerating plot with title '{title}'...")
     else:
         print(f"\nGenerating plot to file {file_out}...")
 
     flag_only_plot = False
+    missing_ds = None
+    missing_fn_list = []
     if low_mem:
         # load the dataset in chunks
-        ds = _plot._load_and_prework_dataset(directory,
-                                             dates,
-                                             tmp_dir,
-                                             operator,
-                                             skip_existing=continue_plot)
+        ds, missing_fn_list = _plot._load_and_prework_dataset(
+            directory,
+            dates,
+            tmp_dir,
+            operator,
+            skip_existing=continue_plot,
+            write_missing_pct=plot_missing_pct,
+            missing_tile_suffix=missing_tile_suffix,
+        )
         flag_only_plot = True
     else:
         ds = _plot._load_whole_dataset(directory, dates)
+        if plot_missing_pct:
+            if "band" in ds.dims:
+                data = ds.sel(band=1).band_data
+            else:
+                data = ds.band_data
+
+            if "time" in data.dims:
+                missing_pct = data.isnull().mean(dim="time") * 100.0
+                missing_ds = missing_pct.to_dataset(name="band_data")
+                missing_ds.rio.write_crs(ds.rio.crs)
+            else:
+                print("   - Missing-percent plot skipped (no time dimension).")
 
     if flag_only_plot:
         operator_work = "only_plot"
@@ -737,33 +803,87 @@ def plot_range(
 
     if output_data:
         data_dir = _plot._gen_data_dir_part(file_out)
-        data_output_fn = os.path.basename(file_out).replace('.png', '.zarr')
+        data_output_fn = os.path.basename(file_out).replace(".png", ".zarr")
     else:
-        data_dir = ''
-        data_output_fn = ''
+        data_dir = ""
+        data_output_fn = ""
 
-    plot_dataset(ds,
-                 title=title,
-                 file_out=file_out,
-                 operator=operator_work,
-                 coarsen=coarsen,
-                 vmax=vmax,
-                 value_factor=value_factor,
-                 data_output_dir=data_dir,
-                 data_output_fn=data_output_fn,
-                 continue_plot=continue_plot,
-                 extra_actions=extra_actions,
-                 lon_min=lon_min,
-                 lon_max=lon_max,
-                 lat_min=lat_min,
-                 lat_max=lat_max,
-                 fn_worldcover=fn_worldcover,
-                 extra_xlabel=extra_xlabel,
-                 max_factor=max_factor,
-                 exclude_lc_class=exclude_lc_class,
-                 colourscale=colourscale,
-                 export_stats=export_stats,
-                 stop_after_save=stop_after_save)
+    plot_dataset(
+        ds,
+        title=title,
+        file_out=file_out,
+        operator=operator_work,
+        coarsen=coarsen,
+        vmax=vmax,
+        value_factor=value_factor,
+        data_output_dir=data_dir,
+        data_output_fn=data_output_fn,
+        continue_plot=continue_plot,
+        extra_actions=extra_actions,
+        lon_min=lon_min,
+        lon_max=lon_max,
+        lat_min=lat_min,
+        lat_max=lat_max,
+        fn_worldcover=fn_worldcover,
+        extra_xlabel=extra_xlabel,
+        max_factor=max_factor,
+        exclude_lc_class=exclude_lc_class,
+        colourscale=colourscale,
+        export_stats=export_stats,
+        stop_after_save=stop_after_save,
+    )
+
+    if plot_missing_pct:
+        if title != "":
+            missing_title = f"{missing_title_prefix} {title}"
+        else:
+            missing_title = missing_title_prefix
+
+        missing_out_base, _ = os.path.splitext(file_out)
+        missing_file_out = f"{missing_out_base}_{missing_suffix}.png"
+
+        if low_mem:
+            if len(missing_fn_list) > 0:
+                missing_ds = xr.open_mfdataset(
+                    missing_fn_list,
+                    combine="by_coords",
+                    chunks={"band": 1, "x": 400, "y": 400},
+                    parallel=False,
+                )
+            else:
+                missing_ds = None
+
+        if missing_ds is not None:
+            plot_dataset(
+                missing_ds,
+                title=missing_title,
+                file_out=missing_file_out,
+                operator="only_plot",
+                coarsen=coarsen,
+                vmax=100.0,
+                value_factor=1.0,
+                data_output_dir="",
+                data_output_fn="",
+                continue_plot=continue_plot,
+                extra_actions="",
+                lon_min=lon_min,
+                lon_max=lon_max,
+                lat_min=lat_min,
+                lat_max=lat_max,
+                fn_worldcover="",
+                extra_xlabel="",
+                colorbar_label=missing_label,
+                max_factor=1.0,
+                exclude_lc_class=[],
+                colourscale=missing_colourscale,
+                export_stats=False,
+                stop_after_save=False,
+                title_unit="%",
+            )
+            missing_ds.close()
+            gc.collect()
+        else:
+            print("   - Missing-percent plot skipped (no data available).")
 
     if low_mem:
         if os.path.exists(tmp_dir):
@@ -773,6 +893,6 @@ def plot_range(
 
 
 if __name__ == "__main__":
-
     raise NotImplementedError(
-        "This script is not meant to be run as a standalone script.")
+        "This script is not meant to be run as a standalone script."
+    )
