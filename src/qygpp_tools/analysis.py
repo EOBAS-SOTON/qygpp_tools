@@ -719,7 +719,8 @@ def plot_range(
     plot_missing_pct: bool = False,
     missing_suffix: str = "percNaN",
     missing_title_prefix: str = "Percentage NaN in Composite:",
-    missing_colourscale: str = "magma",
+    # missing_colourscale: str = "magma",
+    missing_colourscale: str = "hot",
     missing_label: str = "Percentage missing Timepoints (%)",
     missing_tile_suffix: str = "missing_percNaN",
 ) -> None:
