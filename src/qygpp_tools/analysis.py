@@ -20,14 +20,14 @@
 
 import datetime
 import gc
+import os
 import shutil
 
 import geopandas as gpd
 import numpy as np
-import os
-from tqdm import tqdm
 import xarray as xr
 import zarr
+from tqdm import tqdm
 
 from .analysis_core import plotting as _plot
 from .analysis_core import timeseries as _ts
@@ -506,8 +506,8 @@ def plot_dataset(
         n_pixels_y = ds.sizes["y"]
 
         # Transform bounds to EPSG:4326 to determine target extent
-        from rasterio.warp import transform_bounds
         from rasterio.enums import Resampling
+        from rasterio.warp import transform_bounds
 
         target_bounds = transform_bounds(
             ds.rio.crs,
@@ -855,6 +855,15 @@ def plot_range(
                 missing_ds = None
 
         if missing_ds is not None:
+            if output_data:
+                missing_data_output_fn = os.path.basename(missing_file_out).replace(
+                    ".png", "_percNaN.zarr"
+                )
+                missing_data_output_dir = _plot._gen_data_dir_part(missing_file_out)
+            else:
+                missing_data_output_fn = ""
+                missing_data_output_dir = ""
+
             plot_dataset(
                 missing_ds,
                 title=missing_title,
@@ -863,8 +872,8 @@ def plot_range(
                 coarsen=coarsen,
                 vmax=100.0,
                 value_factor=1.0,
-                data_output_dir="",
-                data_output_fn="",
+                data_output_dir=missing_data_output_dir,
+                data_output_fn=missing_data_output_fn,
                 continue_plot=continue_plot,
                 extra_actions="",
                 lon_min=lon_min,
