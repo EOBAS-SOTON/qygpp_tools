@@ -59,6 +59,11 @@ root/
     └── files for each tile
 ```
 
+### Download remote files:
+There are two helper functions to download the files from the remote data repository:
+- list_available_datums - which lists all the datums with data.
+- download_datum_files - which  Download all `tiles` for `datum` and store them in `download_dir`.
+
 ### Global Composite
 
 To plot a global composite, the function `plot_composite` is used.
