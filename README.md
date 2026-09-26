@@ -47,15 +47,15 @@ All the following examples assume that the data is in a directory structure like
 
 ```
 root/
-├── 20200101/
+├── 2020-01-01/
 │   ├── QISCARF_GPP_20200101_h00v08_m0.830_b0.053_pc31.000_qi0.080_v02.tif
 │   ├── QISCARF_GPP_20200101_h00v09_m0.830_b0.053_pc31.000_qi0.080_v02.tif
 │   └── ...
-├── 20200109/
+├── 2020-01-09/
 │   ├── QISCARF_GPP_20200109_h00v08_m0.830_b0.053_pc31.000_qi0.080_v02.tif
 │   ├── QISCARF_GPP_20200109_h00v09_m0.830_b0.053_pc31.000_qi0.080_v02.tif
 │   └── ...
-└── YYYYMMDD/
+└── YYYY-MM-DD/
     └── files for each tile
 ```
 
