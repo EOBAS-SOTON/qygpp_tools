@@ -76,8 +76,8 @@ def download_datum_files(datum, download_dir, tiles=None):
     else:
         filelist = []
 
-    download_dir_datum = f'{download_dir}{datum}/'
-    os.mkdir(download_dir_datum)
+    download_dir_datum = os.path.join(download_dir, datum)
+    os.makedirs(download_dir_datum, exist_ok=True)
     
     for s3_key in filelist:
 

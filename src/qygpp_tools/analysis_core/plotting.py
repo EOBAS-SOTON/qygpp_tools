@@ -277,6 +277,7 @@ def _make_main_plot(
     for var in dataset.data_vars:
         if dataset[var].dtype != np.float32:
             dataset[var] = dataset[var].astype("float32")
+    dataset = dataset.where(np.isfinite(dataset))
     gc.collect()
 
     # Depending on crop or not, get the main statistics
@@ -286,6 +287,7 @@ def _make_main_plot(
         ds_stats = dataset.sel(band=1)
     else:
         ds_stats = dataset
+    ds_stats = ds_stats.where(np.isfinite(ds_stats))
 
     # Create all reductions, then compute together in one pass
     if stats_data == {}:
@@ -306,6 +308,13 @@ def _make_main_plot(
     min_val = float(stats["min"].values)
     mean_val = float(stats["mean"].values)
     max_val = float(stats["max"].values)
+
+    if not np.isfinite(min_val):
+        min_val = np.nan
+    if not np.isfinite(mean_val):
+        mean_val = np.nan
+    if not np.isfinite(max_val):
+        max_val = np.nan
 
     print("     Plotting...")
     # First we specify Coordinate Refference System for Map Projection
@@ -353,12 +362,20 @@ def _make_main_plot(
 
     if plot_type == "standard":
         if np.isnan(vmax):
-            vmax_plot = math.ceil(max(max_val * max_fac, mean_val))
+            candidates = [
+                val for val in (max_val * max_fac, mean_val) if np.isfinite(val)
+            ]
+            vmax_plot = math.ceil(max(candidates)) if candidates else 10.0
         else:
             vmax_plot = math.ceil(max(vmax, 10.0))
     elif plot_type == "difference":
         if np.isnan(vmax):
-            vmax_plot = math.ceil(max(abs(min_val) * max_fac, abs(max_val) * max_fac))
+            candidates = [
+                val
+                for val in (abs(min_val) * max_fac, abs(max_val) * max_fac)
+                if np.isfinite(val)
+            ]
+            vmax_plot = math.ceil(max(candidates)) if candidates else 10.0
             vmin_plot = -vmax_plot
         else:
             vmax_plot = math.ceil(max(vmax, 10.0))
@@ -418,27 +435,17 @@ def _make_main_plot(
         gc.collect()
     else:
         print(f"     - Using imshow for plotting, {total_pixels:n} pixels")
-        # Use imshow for very large datasets to conserve memory
-        # This is more memory-efficient for global-scale plots
-        cbar_kwargs = {
-            "orientation": "horizontal",
-            "shrink": 0.6,
-            "pad": 0.05,
-            "aspect": 40,
-            "label": xlabel,
-        }
-
         # Set vmin based on plot type
         if plot_type == "difference":
             imshow_vmin = vmin_plot
         else:
             imshow_vmin = 0.0001
 
-        dataset.band_data.plot.imshow(
+        mesh = dataset.band_data.plot.imshow(
             ax=ax,
             transform=ccrs.PlateCarree(),
             cmap=plot_cmap,
-            cbar_kwargs=cbar_kwargs,
+            add_colorbar=False,
             vmin=imshow_vmin,
             vmax=vmax_plot,
             levels=21,
@@ -487,14 +494,13 @@ def _make_main_plot(
         )
     else:
         plt.title("")
-    # plt.title(title)
-    # plt.show()
 
     # check if output location exists
     path_out = os.path.dirname(file_out)
     if path_out != "":
         if not os.path.exists(path_out):
             os.makedirs(path_out)
+    print(f"     - Saving plot to {file_out}...")
     plt.savefig(file_out, dpi=300, bbox_inches="tight")
 
     plt.close()
